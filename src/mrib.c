@@ -744,7 +744,9 @@ int mrib_mld_source(struct mrib_querier *q, struct in6_addr *source)
 		ret = -errno;
 
 	if (ret || getsockname(sock, (struct sockaddr*)&addr, &alen)) {
-		L_WARN("%s: failed to detect local source address on %d", __FUNCTION__, q->iface->ifindex);
+		char ifname[IF_NAMESIZE];
+		if_indextoname(q->iface->ifindex, ifname);
+		L_WARN("%s: failed to detect local source address on %d (%s)", __FUNCTION__, q->iface->ifindex, ifname);
 		ret = -errno;
 	}
 
@@ -777,7 +779,9 @@ int mrib_igmp_source(struct mrib_querier *q, struct in_addr *source)
 		ret = -errno;
 
 	if (ret || getsockname(sock, (struct sockaddr*)&addr, &alen)) {
-		L_WARN("%s: failed to detect local source address on %d", __FUNCTION__, q->iface->ifindex);
+		char ifname[IF_NAMESIZE];
+		if_indextoname(q->iface->ifindex, ifname);
+		L_WARN("%s: failed to detect local source address on %d (%s)", __FUNCTION__, q->iface->ifindex, ifname);
 		ret = -errno;
 	}
 
