@@ -33,6 +33,7 @@ enum {
 	PROXY_ATTR_SOURCE,
 	PROXY_ATTR_SCOPE,
 	PROXY_ATTR_DEST,
+	PROXY_ATTR_ROUTER_ALERT_CHECK,
 	PROXY_ATTR_MAX,
 };
 
@@ -40,6 +41,7 @@ static struct blobmsg_policy proxy_policy[PROXY_ATTR_MAX] = {
 	[PROXY_ATTR_SOURCE] = { .name = "source", .type = BLOBMSG_TYPE_STRING },
 	[PROXY_ATTR_SCOPE] = { .name = "scope", .type = BLOBMSG_TYPE_STRING },
 	[PROXY_ATTR_DEST] = { .name = "dest", .type = BLOBMSG_TYPE_ARRAY },
+	[PROXY_ATTR_ROUTER_ALERT_CHECK] = { .name = "router_alert_check", .type = BLOBMSG_TYPE_BOOL },
 };
 
 static int handle_proxy_set(void *data, size_t len)
@@ -51,7 +53,10 @@ static int handle_proxy_set(void *data, size_t len)
 	int uplink = 0;
 	int downlinks[32] = {0};
 	size_t downlinks_cnt = 0;
-	enum proxy_flags flags = 0;
+	proxy_cfg_t cfg = {
+		.flags = 0,
+		.router_alert_check = true,
+	};
 
 	if (!name)
 		return -EINVAL;
@@ -64,17 +69,17 @@ static int handle_proxy_set(void *data, size_t len)
 	if ((c = tb[PROXY_ATTR_SCOPE])) {
 		const char *scope = blobmsg_get_string(c);
 		if (!strcmp(scope, "global"))
-			flags = PROXY_GLOBAL;
+			cfg.flags = PROXY_GLOBAL;
 		else if (!strcmp(scope, "organization"))
-			flags = PROXY_ORGLOCAL;
+			cfg.flags = PROXY_ORGLOCAL;
 		else if (!strcmp(scope, "site"))
-			flags = PROXY_SITELOCAL;
+			cfg.flags = PROXY_SITELOCAL;
 		else if (!strcmp(scope, "admin"))
-			flags = PROXY_ADMINLOCAL;
+			cfg.flags = PROXY_ADMINLOCAL;
 		else if (!strcmp(scope, "realm"))
-			flags = PROXY_REALMLOCAL;
+			cfg.flags = PROXY_REALMLOCAL;
 
-		if (!flags) {
+		if (!cfg.flags) {
 			L_WARN("%s(%s): invalid scope (%s)", __FUNCTION__, name, scope);
 			return -EINVAL;
 		}
@@ -97,7 +102,11 @@ static int handle_proxy_set(void *data, size_t len)
 		}
 	}
 
-	return proxy_set(uplink, downlinks, downlinks_cnt, flags);
+	if ((c = tb[PROXY_ATTR_ROUTER_ALERT_CHECK])) {
+		cfg.router_alert_check = blobmsg_get_bool(c);
+	}
+
+	return proxy_set(uplink, downlinks, downlinks_cnt, &cfg);
 }
 
 static void handle_signal(__unused int signal)

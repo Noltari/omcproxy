@@ -29,6 +29,7 @@ struct proxy {
 	struct mrib_user mrib;
 	struct querier querier;
 	enum proxy_flags flags;
+	bool router_alert_check;
 };
 
 struct proxy_downlink {
@@ -122,7 +123,7 @@ static int proxy_unset(struct proxy *proxyp)
 }
 
 // Add / update proxy
-int proxy_set(int uplink, const int downlinks[], size_t downlinks_cnt, enum proxy_flags flags)
+int proxy_set(int uplink, const int downlinks[], size_t downlinks_cnt, proxy_cfg_t *cfg)
 {
 	struct proxy *proxy = NULL, *p;
 	list_for_each_entry(p, &proxies, head)
@@ -130,7 +131,7 @@ int proxy_set(int uplink, const int downlinks[], size_t downlinks_cnt, enum prox
 			proxy = p;
 
 	if (proxy && (downlinks_cnt == 0 ||
-			((proxy->flags & _PROXY_SCOPEMASK) != (flags & _PROXY_SCOPEMASK)))) {
+			((proxy->flags & _PROXY_SCOPEMASK) != (cfg->flags & _PROXY_SCOPEMASK)))) {
 		proxy_unset(proxy);
 		proxy = NULL;
 	}
@@ -142,10 +143,11 @@ int proxy_set(int uplink, const int downlinks[], size_t downlinks_cnt, enum prox
 		if (!(proxy = calloc(1, sizeof(*proxy))))
 			return -ENOMEM;
 
-		if ((flags & _PROXY_SCOPEMASK) == 0)
-			flags |= PROXY_GLOBAL;
+		if ((cfg->flags & _PROXY_SCOPEMASK) == 0)
+			cfg->flags |= PROXY_GLOBAL;
 
-		proxy->flags = flags;
+		proxy->flags = cfg->flags;
+		proxy->router_alert_check = cfg->router_alert_check;
 		proxy->ifindex = uplink;
 		querier_init(&proxy->querier);
 		list_add(&proxy->head, &proxies);

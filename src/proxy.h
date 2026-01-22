@@ -37,9 +37,12 @@ enum proxy_flags {
 	_PROXY_SCOPEMASK = 0xf,
 };
 
+typedef struct proxy_cfg {
+	enum proxy_flags flags;
+	bool router_alert_check;
+} proxy_cfg_t;
 
-int proxy_set(int uplink, const int downlinks[], size_t downlinks_cnt, enum proxy_flags flags);
-
+int proxy_set(int uplink, const int downlinks[], size_t downlinks_cnt, proxy_cfg_t *cfg);
 
 void proxy_update(bool all);
 void proxy_flush(void);
